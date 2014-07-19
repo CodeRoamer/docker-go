@@ -7,12 +7,7 @@ const (
 )
 
 func (client *DClient) ListImages(all bool)  {
-	path := "/images/json?all="
-	if all {
-		path += "1"
-	} else {
-		path += "0"
-	}
-	body,_, _ := client.Do("GET", path, nil)
-		fmt.Printf("%s", body)
+	body, status, err := client.Do("GET", fmt.Sprintf(listImages, all), nil)
+	fmt.Println(status, err)
+	fmt.Printf("%s", body)
 }

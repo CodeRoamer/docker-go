@@ -7,7 +7,7 @@ import (
 )
 
 func TestListImages(t *testing.T) {
-	client, err := api.NewDClient("http://127.0.0.1:4213")
+	client, err := api.NewDClient("http://222.26.224.50:4213")
 	if err != nil {
 		fmt.Println(err)
 		return
