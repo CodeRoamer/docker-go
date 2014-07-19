@@ -6,20 +6,20 @@ import (
 	"encoding/json"
 	"bytes"
 	"net"
-	"net/http/httputil"
 	"io/ioutil"
 	"io"
 	"errors"
 
 	"github.com/coderoamer/docker-go/utils"
+	"fmt"
 )
 
 type DClient struct {
-	endpoint            string
-	endpointURL         *url.URL
-	client              *http.Client
+	endpoint			string
+	endpointURL		*url.URL
+	client				*http.Client
+	scheme				string
 }
-
 
 func NewDClient(endpoint string) (*DClient, error) {
 	u, err := url.Parse(endpoint)
@@ -27,7 +27,28 @@ func NewDClient(endpoint string) (*DClient, error) {
 		return nil, err
 	}
 
-	return &DClient{endpoint, u, http.DefaultClient}, nil
+	var client *http.Client
+
+	switch u.Scheme{
+	case "unix":
+		httpTransport := &http.Transport{}
+		socketPath := u.Path
+		unixDial := func(proto string, addr string) (net.Conn, error) {
+			return net.Dial("unix", socketPath)
+		}
+		httpTransport.Dial = unixDial
+		// Override the main URL object so the HTTP lib won't complain
+		client = &http.Client{Transport: httpTransport}
+	case "http":
+		client = http.DefaultClient
+	}
+	u.Path = ""
+
+	return &DClient{
+		endpoint: endpoint,
+		endpointURL: u,
+		client: client,
+		scheme: u.Scheme}, nil
 }
 
 //args: method:get/post, path:request path data:post data(json data)
@@ -41,6 +62,9 @@ func (c *DClient) Do(method, path string, data interface{}) ([]byte, int, error)
 		}
 		params = bytes.NewBuffer(buf)
 	}
+	if c.scheme == "http" {
+		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
+	}
 
 	req, err := http.NewRequest(method, path, params)
 	if err != nil {
@@ -51,37 +75,18 @@ func (c *DClient) Do(method, path string, data interface{}) ([]byte, int, error)
 	} else if method == "POST" {
 		req.Header.Set("Content-Type", "plain/text")
 	}
-	var resp *http.Response
-	protocol := c.endpointURL.Scheme
-	address := c.endpointURL.Path
-
-	switch protocol {
-	case "unix":
-		dial, err := net.Dial(protocol, address)
-		if err != nil {
-			return nil, -1, err
-		}
-		defer dial.Close()
-		clientconn := httputil.NewClientConn(dial, nil)
-		resp, err = clientconn.Do(req)
-		if err != nil {
-			return nil, -1, err
-		}
-		defer clientconn.Close()
-	case "http":
-		resp, err = c.client.Do(req)
-	}
-
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, -1, err
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, -1, err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return nil, resp.StatusCode, errors.New(utils.ReqError)
+	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		return nil, res.StatusCode, errors.New(utils.ReqError)
 	}
-	return body, resp.StatusCode, nil
+	return body, res.StatusCode, nil
 }
+
