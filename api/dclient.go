@@ -18,9 +18,10 @@ type DClient struct {
 	endpointURL		*url.URL
 	client				*http.Client
 	scheme				string
+	version			string
 }
 
-func NewDClient(endpoint string) (*DClient, error) {
+func NewDClient(endpoint, version string) (*DClient, error) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,8 @@ func NewDClient(endpoint string) (*DClient, error) {
 		endpoint: endpoint,
 		endpointURL: u,
 		client: client,
-		scheme: u.Scheme}, nil
+		scheme: u.Scheme,
+		version: version}, nil
 }
 
 //args: method:get/post, path:request path data:post data(json data)
@@ -61,6 +63,7 @@ func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte
 		}
 		params = bytes.NewBuffer(buf)
 	}
+	path = fmt.Sprintf("/%s/%s", c.version, path)
 	if c.scheme == "http" {
 		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
 	}
