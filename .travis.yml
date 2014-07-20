@@ -7,7 +7,8 @@ go:
 env:
   - GOARCH=amd64
   - GOARCH=386
-install:
-  - go get -d ./...
-script:
-  - go test ./...
+
+install: 
+  - go get -v ./api
+script: 
+  - go test -v ./api
