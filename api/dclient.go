@@ -1,16 +1,16 @@
-// Copyright 2013 CodeHolic org.
+// 	Copyright 2013 CodeHolic org
 //
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
 
 package api
@@ -29,75 +29,89 @@ import (
 
 const (
 	DefaultDockerAPIVersion = "1.13"
-	DefaultTimeoutSeconds = 60
-	StreamHeaderSizeBytes = 8
+	DefaultTimeoutSeconds   = 60
+	StreamHeaderSizeBytes   = 8
 )
 
 type DClient struct {
-	endpoint			string
-	endpointURL		*url.URL
-	client				*http.Client
-	scheme				string
-	version			string
-	timeout			int
+	endpoint              string
+	endpointURL           *url.URL
+	client                *http.Client
+	scheme                string
+	version               string
+	timeout               int
 }
 
+
+// create a new DClient with the given endpoint and version,
+// with additional timeout param
 func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
-	u, err := url.Parse(endpoint)
+	var client *http.Client
+
+	// with trailing slash?
+	if strings.HasSuffix(endpoint, "/") {
+		endpoint = strings.TrimSuffix(endpoint, "/")
+	}
+
+	// parse endpoint to url struct
+	endpoint_url, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	var client *http.Client
-
-	switch u.Scheme{
+	switch endpoint_url.Scheme{
 	case "unix":
-//		httpTransport := &http.Transport{}
-//		// TODO: socketPath = "/"+u.Host+u.Path
-//		socketPath := u.Path
-//		unixDial := func(/*proto string, addr string*/) (net.Conn, error) {
-//			return net.Dial("unix", socketPath)
-//		}
-//		httpTransport.Dial = unixDial
-//		// Override the main URL object so the HTTP lib won't complain
-//		client = &http.Client{Transport: httpTransport}
+		//		httpTransport := &http.Transport{}
+		//		// TODO: socketPath = "/"+u.Host+u.Path
+		//		socketPath := u.Path
+		//		unixDial := func(/*proto string, addr string*/) (net.Conn, error) {
+		//			return net.Dial("unix", socketPath)
+		//		}
+		//		httpTransport.Dial = unixDial
+		//		// Override the main URL object so the HTTP lib won't complain
+		//		client = &http.Client{Transport: httpTransport}
+		client = nil
 	case "http":
 		client = http.DefaultClient
 	}
-	u.Path = ""
 
 	return &DClient{
 		endpoint: endpoint,
-		endpointURL: u,
+		endpointURL: endpoint_url,
 		client: client,
-		scheme: u.Scheme,
+		scheme: endpoint_url.Scheme,
 		version: version,
-		timeout: timeout}, nil
+		timeout: timeout,
+	}, nil
 }
 
+// create a url with the given path
+// form with a endpoint, api version and path
 func (c *DClient) url(path string) string {
 	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
 }
 
-func (c *DClient) get(path string, options interface {}) (*http.Response, error) {
-	var param url.Values
 
-	if options != nil {
-		if buf, err := json.Marshal(options); err == nil {
-			var data map[string]string
+// format a response to json(string) or to binary([]byte)
+func (c *DClient) result(response *http.Response) (string, error) {
+	body, err := ioutil.ReadAll(response.Body)
 
-			fmt.Println(string(buf))
+	if err {
+		return nil, err
+	}
 
-			if err = json.Unmarshal([]byte(string(buf)), &data); err == nil {
-				for key, value := range data {
-					param.Add(key, value)
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
+	return string(body), nil
+}
+
+
+// pay attention: path is complete path, should be like this:
+// http://endpoint/v1.12/containers
+func (c *DClient) get(path string, options interface{}) (*http.Response, error) {
+
+	query_string := ParseStruct2QueryString(options)
+
+	if len(query_string) != 0 {
+		path += "?"+query_string
 	}
 
 	req, err := http.NewRequest("GET", path, nil)
@@ -106,11 +120,66 @@ func (c *DClient) get(path string, options interface {}) (*http.Response, error)
 		return nil, err
 	}
 
-	req.Form = param
+	return c.client.Do(req)
+
+}
+
+
+// post method, two parts:
+// params append to the url, data post in body
+func (c *DClient) post(path string, param, data interface {}) (*http.Response, error) {
+	// query string as params
+	query_string := ParseStruct2QueryString(param)
+
+	if len(query_string) != 0 {
+		path += "?"+query_string
+	}
+
+	// post data as body
+	var post_data io.Reader = nil
+	if data != nil {
+		buf, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+		post_data = bytes.NewBuffer(buf)
+	}
+
+	// create request
+	req, err := http.NewRequest("POST", path, post_data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return c.client.Do(req)
+}
+
+
+// delete
+// pay attention: path is complete path, should be like this:
+// http://endpoint/v1.12/containers
+func (c *DClient) delete(path string, options interface{}) (*http.Response, error) {
+
+	query_string := ParseStruct2QueryString(options)
+
+	if len(query_string) != 0 {
+		path += "?"+query_string
+	}
+
+	req, err := http.NewRequest("DELETE", path, nil)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return c.client.Do(req)
 
 }
+
+
 
 //args: method:get/post, path:request path data:post data(json data)
 //return: body, status, error
@@ -141,6 +210,9 @@ func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte
 	return body, res.StatusCode, err
 }
 
+
+
+
 func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
 	var result []byte
 	var status int
@@ -156,7 +228,7 @@ func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if  retError == NoError {
+	if retError == NoError {
 
 		return result, nil
 	}else {

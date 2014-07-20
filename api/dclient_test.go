@@ -29,21 +29,27 @@ import (
 type People struct {
 	Hello string `json:"hello"`
 	Name string `json:"name"`
-	Age int `json:"age"`
+	Age string `json:"age"`
 }
 
 func TestGet(t *testing.T) {
-	client, err := NewDClient("http://127.0.0.1:8000/", "api",20)
+	client, err := NewDClient("http://127.0.0.1:8000", "api",20)
 
 	if err != nil {
 		fmt.Println(err)
-
+		return
 	}
-	_, err = client.get("/announcement", People{
+	_, err = client.get(client.url("/announcement?name=lihe"), People{
 		Hello: "name",
 		Name: "lihe",
-		Age: 18,
+		Age: "18",
 	})
+
+	fmt.Println(client.queryString(People{
+		Hello: "name",
+		Name: "lihe",
+		Age: "18",
+	}))
 
 	if err != nil {
 		fmt.Println(err)
