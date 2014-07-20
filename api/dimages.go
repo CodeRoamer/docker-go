@@ -1,11 +1,17 @@
 package api
 
 import (
-	"fmt"
 	"encoding/json"
+
+	"github.com/Unknwon/com"
 )
 
-type APIImages struct {
+type ListImagesAPI_Query struct {
+	All bool    `json:"all"`
+	Filters map[string][]string `json:"filters,omitempty"`
+}
+
+type ListImagesAPI_Resp struct {
 	ID          string   `json:"Id"`
 	RepoTags    []string `json:",omitempty"`
 	Created     int64
@@ -16,15 +22,16 @@ type APIImages struct {
 	Tag         string `json:",omitempty"`
 }
 
-func (client *DClient) ListImages(all bool) ([]APIImages, error) {
-	arg := fmt.Sprintf("all=%v", all)
-	api := GetImagesApi(Images, List, "get", "/images/json", arg, "application/json")
-	body, err := client.Do(api)
-	if err != nil {
-		return  nil, err
+func (client *DClient) ListImages(json ListImagesAPI_Query) ([]ListImagesAPI_Resp, error) {
+	if !com.IsSliceContainsStr(ListImagesAPI.Version, client.version) {
+		// version not supported
+		return nil, nil
 	}
-	var images []APIImages
-	err = json.Unmarshal(body, &images)
+	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json)
+
+
+	var images []ListImagesAPI_Resp
+	err = json.Unmarshal(client.result_binary(resp), &images)
 	if err != nil {
 		return nil, err
 	}

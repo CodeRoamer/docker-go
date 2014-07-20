@@ -1,34 +1,39 @@
 package api
 
-import "strings"
-
+// modules
 const (
-	Images 		= 1
-	Containers 	= 2
-)
-
-const (
-	List		= 1
-	Create		= 2
-	Insert 	= 3
-	Inspect 	= 4
-	Start		= 5
-	Stop		= 6
-
+	Images     = 1
+	Containers = 2
+	Misc       = 3
 )
 
 type ModuleAPI struct {
-	Module int				//	container | images | misc
-	Api int 				//	List
-	Method string		 	//	POST & GET
-	ReqUrl string			//	/containers/json
-	ReqArg string			//	all=%d&before=%s&size=%d
-	ContentType string		//	application/json
-	Result interface {}
+	Module        int      //	container | images | misc
+	Version       []string // supported version ["1.11","1.12"]
+	ReqUrl        string   // path for API /images/%s/insert
+
+	Json         interface{} // json params - for post
+	Query        interface{} // query params - for query_string
+
+	Method        string // GET POST DELETE
+
+	ResType        string // application/json  or  application/vnd.docker.raw-stream  or  application/octet-stream  or  nothing
+	ReqType        string // application/json  or  nothing
+
+	StatusMap    map[int]string // {200: "no error", 500: "server error"}
 }
 
-func GetImagesApi(module, api int, method, reqUrl, reqArg, contentType string ) *ModuleAPI {
-	return &ModuleAPI {
-		module, api, strings.ToUpper(method), reqUrl, reqArg, contentType, nil,
-	}
+var ListImagesAPI = ModuleAPI {
+	Module: Images,
+	Version: []string{"1.11","1.12","1.13"},
+	ReqUrl: "/images/json",
+
+	Method: "GET",
+	ResType: "application/json",
+	ReqType: nil,
+	StatusMap: map[int]string {
+		200: "no error",
+		500: "server error",
+	},
 }
+

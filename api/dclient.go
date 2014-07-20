@@ -93,22 +93,39 @@ func (c *DClient) url(path string) string {
 
 
 // format a response to json(string) or to binary([]byte)
-func (c *DClient) result(response *http.Response) (string, error) {
+func (c *DClient) resultBinary(response *http.Response) ([]byte, error) {
 	body, err := ioutil.ReadAll(response.Body)
-
 	if err {
 		return nil, err
 	}
+	return body, nil
+}
 
+// format a response to json(string) or to binary([]byte)
+func (c *DClient) resultJson(response *http.Response) (string, error) {
+	body, err := ioutil.ReadAll(response.Body)
+	if err {
+		return nil, err
+	}
 	return string(body), nil
 }
 
+// raise an error for http status
+func (c *DClient) raiseForStatus(statusCode int, module ModuleAPI)  (err error) {
+	err = nil
+
+	if statusCode < 400 {
+		err = errors.New(module.StatusMap[statusCode])
+	}
+
+	return err
+}
 
 // pay attention: path is complete path, should be like this:
 // http://endpoint/v1.12/containers
-func (c *DClient) get(path string, options interface{}) (*http.Response, error) {
+func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 
-	query_string := ParseStruct2QueryString(options)
+	query_string := ParseStruct2QueryString(query)
 
 	if len(query_string) != 0 {
 		path += "?"+query_string
@@ -127,9 +144,9 @@ func (c *DClient) get(path string, options interface{}) (*http.Response, error) 
 
 // post method, two parts:
 // params append to the url, data post in body
-func (c *DClient) post(path string, param, data interface {}) (*http.Response, error) {
+func (c *DClient) post(path string, query, json interface {}) (*http.Response, error) {
 	// query string as params
-	query_string := ParseStruct2QueryString(param)
+	query_string := ParseStruct2QueryString(query)
 
 	if len(query_string) != 0 {
 		path += "?"+query_string
@@ -137,8 +154,8 @@ func (c *DClient) post(path string, param, data interface {}) (*http.Response, e
 
 	// post data as body
 	var post_data io.Reader = nil
-	if data != nil {
-		buf, err := json.Marshal(data)
+	if json != nil {
+		buf, err := json.Marshal(json)
 		if err != nil {
 			return nil, err
 		}
