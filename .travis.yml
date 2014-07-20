@@ -11,5 +11,4 @@ env:
 install: 
   - go get -v ./api
 script: 
-  - go test -v ./api
-  - go test -v ./test
+  - go test -v ./...
