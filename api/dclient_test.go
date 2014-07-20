@@ -3,7 +3,7 @@ package api
 import "testing"
 
 func TestDClient_do(t *testing.T) {
-	client, err := NewDClient("http://42.96.195.83:4213")
+	client, err := NewDClient("http://42.96.195.83:4213", "v1.13")
 	if err != nil {
 		t.Error(err)
 		return
