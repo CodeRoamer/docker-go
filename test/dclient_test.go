@@ -6,7 +6,7 @@ import (
 )
 
 func TestListImages(t *testing.T) {
-	client, err := api.NewDClient("http://222.26.224.50:4213")
+	client, err := api.NewDClient("http://42.96.195.83:4213")
 	if err != nil {
 		t.Error(err)
 		return
@@ -22,7 +22,7 @@ func TestListImages(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
-	client, err := api.NewDClient("http://222.26.224.50:4213")
+	client, err := api.NewDClient("http://42.96.195.83:4213")
 	if err != nil {
 		t.Error(err)
 		return
@@ -33,7 +33,7 @@ func TestPing(t *testing.T) {
 		return
 	}
 
-	client, err = api.NewDClient("http://222.26.224.51:4213")
+	client, err = api.NewDClient("http://42.96.195.83:4214")
 	if err != nil {
 		t.Error(err)
 		return
