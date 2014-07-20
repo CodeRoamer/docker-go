@@ -20,5 +20,4 @@ func TestDClient_do(t *testing.T) {
 	if res == nil {
 		t.Error("request empty")
 	}
-
 }

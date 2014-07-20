@@ -3,11 +3,9 @@ package api
 import (
 	"net/url"
 	"net/http"
-	"encoding/json"
 	"bytes"
 	"net"
 	"io/ioutil"
-	"io"
 	"errors"
 	"fmt"
 	"strings"
@@ -37,7 +35,6 @@ func NewDClient(endpoint, version string) (*DClient, error) {
 			return net.Dial("unix", socketPath)
 		}
 		httpTransport.Dial = unixDial
-		// Override the main URL object so the HTTP lib won't complain
 		client = &http.Client{Transport: httpTransport}
 	case "http":
 		client = http.DefaultClient
@@ -54,20 +51,13 @@ func NewDClient(endpoint, version string) (*DClient, error) {
 
 //args: method:get/post, path:request path data:post data(json data)
 //return: body, status, error
-func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte, int, error) {
-	var params io.Reader
-	if data != nil {
-		buf, err := json.Marshal(data)
-		if err != nil {
-			return nil, -1, err
-		}
-		params = bytes.NewBuffer(buf)
-	}
-	path = fmt.Sprintf("/%s/%s", c.version, path)
+func (c *DClient) do(method, path, contentType string, data []byte) ([]byte, int, error) {
+	buffer := bytes.NewBuffer(data)
+	path = fmt.Sprintf("/%s%s", c.version, path)
 	if c.scheme == "http" {
 		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
 	}
-	req, err := http.NewRequest(strings.ToUpper(method), path, params)
+	req, err := http.NewRequest(strings.ToUpper(method), path, buffer)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -86,21 +76,18 @@ func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
 	var status int
 	var err error
 
-	if strings.ToLower(api.Method) == "get" {
-		result, status, err = c.do(api.Method, fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg), api.ContentType, nil)
+//	if strings.ToLower(api.Method) == "get" {
+	result, status, err = c.do(api.Method,
+		fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg),
+		api.ContentType, nil)
 
-	}else if strings.ToLower(api.Method) == "post" {
-		//TODO
-	}
 	retError := GetGeneralStatusError(status, api)
 	if err != nil {
 		return nil, err
 	}
 	if  retError == NoError {
-
 		return result, nil
 	}else {
-
 		return nil, errors.New(retError)
 	}
 }
