@@ -10,8 +10,8 @@ import (
 	"io"
 	"errors"
 
-	"github.com/coderoamer/docker-go/utils"
 	"fmt"
+	"strings"
 )
 
 type DClient struct {
@@ -53,7 +53,7 @@ func NewDClient(endpoint string) (*DClient, error) {
 
 //args: method:get/post, path:request path data:post data(json data)
 //return: body, status, error
-func (c *DClient) Do(method, path string, data interface{}) ([]byte, int, error) {
+func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte, int, error) {
 	var params io.Reader
 	if data != nil {
 		buf, err := json.Marshal(data)
@@ -65,28 +65,47 @@ func (c *DClient) Do(method, path string, data interface{}) ([]byte, int, error)
 	if c.scheme == "http" {
 		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
 	}
-
 	req, err := http.NewRequest(method, path, params)
 	if err != nil {
 		return nil, -1, err
 	}
-	if data != nil {
-		req.Header.Set("Content-Type", "application/json")
-	} else if method == "POST" {
-		req.Header.Set("Content-Type", "plain/text")
-	}
+	req.Header.Set("Content-Type", contentType)
 	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, -1, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, -1, err
-	}
-	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		return nil, res.StatusCode, errors.New(utils.ReqError)
-	}
-	return body, res.StatusCode, nil
+	return body, res.StatusCode, err
 }
 
+func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
+	var result []byte
+	var status int
+	var err error
+
+	if strings.ToLower(api.Method) == "get" {
+//		result, status, err = c.do("Get", fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg), api.ContentType, nil)
+		result, status, err = c.do("Get", api.ReqUrl, api.ContentType, nil)
+	}else if strings.ToLower(api.Method) == "post" {
+		//TODO
+	}
+	retError := GetGeneralStatusError(status, api)
+	if  retError == NoError {
+		return result, err
+	}else {
+		return nil, errors.New(retError)
+	}
+}
+
+func (c *DClient) Ping() error {
+	path := "/_ping"
+	_, status, err := c.do("GET", path, "application/json", nil)
+	if err != nil {
+		return err
+	}
+	if status != http.StatusOK {
+		return nil
+	}
+	return nil
+}
