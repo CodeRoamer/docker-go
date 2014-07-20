@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"io"
 	"errors"
-
 	"fmt"
 	"strings"
 )
@@ -65,7 +64,7 @@ func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte
 	if c.scheme == "http" {
 		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
 	}
-	req, err := http.NewRequest(method, path, params)
+	req, err := http.NewRequest(strings.ToUpper(method), path, params)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -85,15 +84,20 @@ func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
 	var err error
 
 	if strings.ToLower(api.Method) == "get" {
-//		result, status, err = c.do("Get", fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg), api.ContentType, nil)
-		result, status, err = c.do("Get", api.ReqUrl, api.ContentType, nil)
+		result, status, err = c.do(api.Method, fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg), api.ContentType, nil)
+
 	}else if strings.ToLower(api.Method) == "post" {
 		//TODO
 	}
 	retError := GetGeneralStatusError(status, api)
+	if err != nil {
+		return nil, err
+	}
 	if  retError == NoError {
-		return result, err
+
+		return result, nil
 	}else {
+
 		return nil, errors.New(retError)
 	}
 }

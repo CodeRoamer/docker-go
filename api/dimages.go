@@ -18,7 +18,7 @@ type APIImages struct {
 
 func (client *DClient) ListImages(all bool) ([]APIImages, error) {
 	arg := fmt.Sprintf("all=%v", all)
-	api := GetImagesApi(Images, List, "Get", "/images/json", arg, "application/json")
+	api := GetImagesApi(Images, List, "get", "/images/json", arg, "application/json")
 	body, err := client.Do(api)
 	if err != nil {
 		return  nil, err

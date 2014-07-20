@@ -1,5 +1,7 @@
 package api
 
+import "strings"
+
 const (
 	Images 		= 1
 	Containers 	= 2
@@ -27,6 +29,6 @@ type ModuleAPI struct {
 
 func GetImagesApi(module, api int, method, reqUrl, reqArg, contentType string ) *ModuleAPI {
 	return &ModuleAPI {
-		module, api, method, reqUrl, reqArg, contentType, nil,
+		module, api, strings.ToUpper(method), reqUrl, reqArg, contentType, nil,
 	}
 }

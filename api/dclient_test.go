@@ -1,18 +1,14 @@
 package api
 
-import (
-	"testing"
-	"fmt"
-)
-
+import "testing"
 
 func TestDClient_do(t *testing.T) {
 	client, err := NewDClient("http://42.96.195.83:4213")
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 		return
 	}
-	res, status, err := client.do("Get", "/images/json", "application/json", nil)
+	res, status, err := client.do("GET", "/images/json", "application/json", nil)
 	if err != nil {
 		t.Error(err)
 		return

@@ -11,7 +11,7 @@ func TestListImages(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	images, err := client.ListImages(false)
+	images, err := client.ListImages(true)
 	if err != nil {
 		t.Error(err)
 		return
@@ -32,7 +32,6 @@ func TestPing(t *testing.T) {
 		t.Error("ping error")
 		return
 	}
-
 	client, err = api.NewDClient("http://42.96.195.83:4214")
 	if err != nil {
 		t.Error(err)

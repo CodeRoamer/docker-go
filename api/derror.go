@@ -7,7 +7,7 @@ const (
 
 func GetGeneralStatusError(code int, module *ModuleAPI) (res string) {
 	switch code{
-	case 200: case 204:
+	case 200, 204:
 		res = NoError
 	case 500:
 		res = "server error"
