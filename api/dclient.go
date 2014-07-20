@@ -1,14 +1,37 @@
+// Copyright 2013 CodeHolic org.
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+
+
 package api
 
 import (
 	"net/url"
 	"net/http"
+	"encoding/json"
 	"bytes"
 	"net"
 	"io/ioutil"
+	"io"
 	"errors"
 	"fmt"
 	"strings"
+)
+
+const (
+	DefaultDockerAPIVersion = "1.13"
+	DefaultTimeoutSeconds = 60
+	StreamHeaderSizeBytes = 8
 )
 
 type DClient struct {
@@ -17,9 +40,10 @@ type DClient struct {
 	client				*http.Client
 	scheme				string
 	version			string
+	timeout			int
 }
 
-func NewDClient(endpoint, version string) (*DClient, error) {
+func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
@@ -35,6 +59,7 @@ func NewDClient(endpoint, version string) (*DClient, error) {
 			return net.Dial("unix", socketPath)
 		}
 		httpTransport.Dial = unixDial
+		// Override the main URL object so the HTTP lib won't complain
 		client = &http.Client{Transport: httpTransport}
 	case "http":
 		client = http.DefaultClient
@@ -46,7 +71,45 @@ func NewDClient(endpoint, version string) (*DClient, error) {
 		endpointURL: u,
 		client: client,
 		scheme: u.Scheme,
-		version: version}, nil
+		version: version,
+		timeout: timeout}, nil
+}
+
+func (c *DClient) url(path string) string {
+	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
+}
+
+func (c *DClient) get(path string, options interface {}) (*http.Response, error) {
+	var param url.Values
+
+	if options != nil {
+		if buf, err := json.Marshal(options); err == nil {
+			var data map[string]string
+
+			fmt.Println(string(buf))
+
+			if err = json.Unmarshal([]byte(string(buf)), &data); err == nil {
+				for key, value := range data {
+					param.Add(key, value)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	req, err := http.NewRequest("GET", path, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Form = param
+
+	return c.client.Do(req)
+
 }
 
 //args: method:get/post, path:request path data:post data(json data)
@@ -76,7 +139,6 @@ func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
 	var status int
 	var err error
 
-//	if strings.ToLower(api.Method) == "get" {
 	result, status, err = c.do(api.Method,
 		fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg),
 		api.ContentType, nil)
