@@ -11,10 +11,13 @@ func TestListImages(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	err = client.ListImages(false)
+	images, err := client.ListImages(false)
 	if err != nil {
 		t.Error(err)
 		return
+	}
+	if images == nil {
+		t.Error("images not fetch")
 	}
 }
 
