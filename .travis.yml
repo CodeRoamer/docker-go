@@ -9,7 +9,6 @@ env:
   - GOARCH=386
 
 install: 
-  - go get -v ./api
+  - go get -v github.com/coderoamer/docker-go/api
 script: 
-  - go test -v ./api
-  - go test -v ./test
+  - go test -v ./...
