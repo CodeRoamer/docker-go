@@ -6,7 +6,7 @@ import (
 )
 
 func TestListImages(t *testing.T) {
-	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13", 20)
+	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13")
 	if err != nil {
 		t.Error(err)
 		return
@@ -22,7 +22,7 @@ func TestListImages(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
-	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13", 20)
+	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13")
 	if err != nil {
 		t.Error(err)
 		return
@@ -32,7 +32,7 @@ func TestPing(t *testing.T) {
 		t.Error("ping error")
 		return
 	}
-	client, err = api.NewDClient("http://42.96.195.83:4214", "v1.13", 20)
+	client, err = api.NewDClient("http://42.96.195.83:4214", "v1.13")
 	if err != nil {
 		t.Error(err)
 		return
@@ -43,13 +43,4 @@ func TestPing(t *testing.T) {
 	}else {
 		t.Error("error ")
 	}
-}
-
-func TestCreateImages(t *testing.T) {
-	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13")
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	client.CreateImages("ubuntu", "14.04", "", "", "")
 }
