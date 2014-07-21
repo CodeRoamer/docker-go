@@ -12,9 +12,6 @@ type ModuleAPI struct {
 	Version       []string // supported version ["1.11","1.12"]
 	ReqUrl        string   // path for API /images/%s/insert
 
-	Json         interface{} // json params - for post
-	Query        interface{} // query params - for query_string
-
 	Method        string // GET POST DELETE
 
 	ResType        string // application/json  or  application/vnd.docker.raw-stream  or  application/octet-stream  or  nothing
