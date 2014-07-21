@@ -12,12 +12,8 @@ type ModuleAPI struct {
 	Version       []string // supported version ["1.11","1.12"]
 	ReqUrl        string   // path for API /images/%s/insert
 
-	Method        string // GET POST DELETE
-
 	ResType        string // application/json  or  application/vnd.docker.raw-stream  or  application/octet-stream  or  nothing
 	ReqType        string // application/json  or  nothing
-
-	StatusMap    map[int]string // {200: "no error", 500: "server error"}
 }
 
 var ListImagesAPI = ModuleAPI {
@@ -25,12 +21,7 @@ var ListImagesAPI = ModuleAPI {
 	Version: []string{"1.11","1.12"},
 	ReqUrl: "/images/json",
 
-	Method: "GET",
 	ResType: "application/json",
 	ReqType: "",
-	StatusMap: map[int]string {
-		200: "no error",
-		500: "server error",
-	},
 }
 

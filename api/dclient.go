@@ -93,68 +93,6 @@ func (c *DClient) url(path string) string {
 	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
 }
 
-// check version
-// return APIError
-func checkVersion(support []string, curr string) (err error) {
-	err = nil
-
-	if !com.IsSliceContainsStr(support, curr) {
-		// version not supported
-		err = APIError {"docker-go error", 500, "API Version Not Supported"}
-	}
-
-	return err
-}
-
-// format a response to json(string) or to binary([]byte)
-// return APIError
-func resultBinary(response *http.Response, module int) ([]byte, error) {
-	err := raiseForStatus(response, module)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err = raiseForErr(err); err != nil {
-		return nil, err
-	}
-
-
-	return body, nil
-}
-
-
-// raise an error for http status
-func raiseForStatus(response *http.Response, module int)  (err error) {
-	err = nil
-
-	if response.StatusCode >= 400 {
-		body, err := ioutil.ReadAll(response.Body)
-
-		var explanation string = ""
-		if err != nil {
-			explanation = string(body)
-		}
-
-		err = APIError {
-			GetGeneralStatusError(response.StatusCode, module),
-			response.StatusCode,
-			explanation,
-		}
-	}
-
-	return err
-}
-
-// raise an error for docker-go error
-// return APIError
-func raiseForErr(err error)  error {
-	if err != nil {
-		err = APIError {"docker-go error", 500, err.Error()}
-	}
-
-	return err
-}
 
 
 // pay attention: path is complete path, should be like this:
@@ -259,4 +197,68 @@ func (c *DClient) Ping() (string, error) {
 	}
 
 	return string(byte_arr), nil
+}
+
+
+// check version
+// return APIError
+func checkVersion(support []string, curr string) (err error) {
+	err = nil
+
+	if !com.IsSliceContainsStr(support, curr) {
+		// version not supported
+		err = APIError {"docker-go error", 500, "API Version Not Supported"}
+	}
+
+	return err
+}
+
+// format a response to json(string) or to binary([]byte)
+// return APIError
+func resultBinary(response *http.Response, module int) ([]byte, error) {
+	err := raiseForStatus(response, module)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err = raiseForErr(err); err != nil {
+		return nil, err
+	}
+
+
+	return body, nil
+}
+
+
+// raise an error for http status
+func raiseForStatus(response *http.Response, module int)  (err error) {
+	err = nil
+
+	if response.StatusCode >= 400 {
+		body, err := ioutil.ReadAll(response.Body)
+
+		var explanation string = ""
+		if err != nil {
+			explanation = string(body)
+		}
+
+		err = APIError {
+			GetGeneralStatusError(response.StatusCode, module),
+			response.StatusCode,
+			explanation,
+		}
+	}
+
+	return err
+}
+
+// raise an error for docker-go error
+// return APIError
+func raiseForErr(err error)  error {
+	if err != nil {
+		err = APIError {"docker-go error", 500, err.Error()}
+	}
+
+	return err
 }
