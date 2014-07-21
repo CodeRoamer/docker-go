@@ -22,6 +22,7 @@ type ListImagesAPI_Resp struct {
 }
 
 
+
 type InspectImageAPI_Resp struct {
 	Created    string
 	Container  string
@@ -48,6 +49,18 @@ type InspectImageAPI_Resp struct {
 	Id         string
 	Parent     string
 	Size       int
+}
+
+type InsertFileAPI_Query struct {
+	Path string `json:"path,omitempty"`
+	Url  string`json:"url,omitempty"`
+}
+
+type InsertFileAPI_Resp struct {
+	Status   string `json:"status,omitempty"`
+	Progress string `json:"progress,omitempty"`
+	ProgressDetail struct {Current int `json:"current,omitempty"`} `json:"progressDetail,omitempty"`
+	Error    string `json:"error,omitempty"`
 }
 
 func (client *DClient) ListImages(json_param ListImagesAPI_Query) (images []ListImagesAPI_Resp, err error) {
@@ -96,6 +109,32 @@ func (client *DClient) InspectImage(name string) (image InspectImageAPI_Resp, er
 
 	// marshal bytes into struct
 	if err = raiseForErr(json.Unmarshal(byte_arr, &image)); err != nil {
+		return
+	}
+
+	// return images
+	return
+}
+
+func (client *DClient) InsertFile(name string, query_param InsertFileAPI_Query) (ret InsertFileAPI_Resp, err error) {
+	if err = checkVersion(InsertFileAPI.Version, client.version); err != nil {
+		return
+	}
+
+	// get response
+	resp, err := client.post(client.url(fmt.Sprintf(InsertFileAPI.ReqUrl, name)), query_param, nil)
+	if err != nil {
+		return
+	}
+
+	// get byte, check response
+	byte_arr, err := resultBinary(resp, InsertFileAPI.Module)
+	if err != nil {
+		return
+	}
+
+	// marshal bytes into struct
+	if err = raiseForErr(json.Unmarshal(byte_arr, &ret)); err != nil {
 		return
 	}
 

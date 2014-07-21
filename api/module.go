@@ -34,3 +34,12 @@ var InspectImageAPI = ModuleAPI {
 	ResType: "application/json",
 	ReqType: "",
 }
+
+var InsertFileAPI = ModuleAPI {
+	Module: Images,
+	Version: []string{"1.11","1.12"},
+	ReqUrl: "/images/%s/insert",
+
+	ResType: "application/json",
+	ReqType: "",
+}

@@ -146,8 +146,9 @@ func (c *DClient) post(path string, query, jsonParam interface {}) (*http.Respon
 	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-
-	req.Header.Set("Content-Type", "application/json")
+	if post_data != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	res, err := c.client.Do(req)
 	if err = raiseForErr(err); err != nil {
@@ -225,7 +226,6 @@ func resultBinary(response *http.Response, module int) ([]byte, error) {
 	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-
 
 	return body, nil
 }
