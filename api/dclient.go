@@ -22,9 +22,10 @@ import (
 	"bytes"
 	"io/ioutil"
 	"io"
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/Unknwon/com"
 )
 
 const (
@@ -85,44 +86,80 @@ func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
 	}, nil
 }
 
+
 // create a url with the given path
 // form with a endpoint, api version and path
 func (c *DClient) url(path string) string {
 	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
 }
 
-
-// format a response to json(string) or to binary([]byte)
-func (c *DClient) resultBinary(response *http.Response) ([]byte, error) {
-	body, err := ioutil.ReadAll(response.Body)
-	if err {
-		return nil, err
-	}
-	return body, nil
-}
-
-// format a response to json(string) or to binary([]byte)
-func (c *DClient) resultJson(response *http.Response) (string, error) {
-	body, err := ioutil.ReadAll(response.Body)
-	if err {
-		return nil, err
-	}
-	return string(body), nil
-}
-
-// raise an error for http status
-func (c *DClient) raiseForStatus(statusCode int, module ModuleAPI)  (err error) {
+// check version
+// return APIError
+func checkVersion(support []string, curr string) (err error) {
 	err = nil
 
-	if statusCode < 400 {
-		err = errors.New(module.StatusMap[statusCode])
+	if !com.IsSliceContainsStr(support, curr) {
+		// version not supported
+		err = APIError {"docker-go error", 500, "API Version Not Supported"}
 	}
 
 	return err
 }
 
+// format a response to json(string) or to binary([]byte)
+// return APIError
+func resultBinary(response *http.Response, module int) ([]byte, error) {
+	err := raiseForStatus(response, module)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err = raiseForErr(err); err != nil {
+		return nil, err
+	}
+
+
+	return body, nil
+}
+
+
+// raise an error for http status
+func raiseForStatus(response *http.Response, module int)  (err error) {
+	err = nil
+
+	if response.StatusCode >= 400 {
+		body, err := ioutil.ReadAll(response.Body)
+
+		var explanation string = ""
+		if err != nil {
+			explanation = string(body)
+		}
+
+		err = APIError {
+			GetGeneralStatusError(response.StatusCode, module),
+			response.StatusCode,
+			explanation,
+		}
+	}
+
+	return err
+}
+
+// raise an error for docker-go error
+// return APIError
+func raiseForErr(err error)  error {
+	if err != nil {
+		err = APIError {"docker-go error", 500, err.Error()}
+	}
+
+	return err
+}
+
+
 // pay attention: path is complete path, should be like this:
 // http://endpoint/v1.12/containers
+// return APIError
 func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 
 	query_string := ParseStruct2QueryString(query)
@@ -132,19 +169,22 @@ func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 	}
 
 	req, err := http.NewRequest("GET", path, nil)
-
-	if err != nil {
+	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
 
-	return c.client.Do(req)
+	res, err := c.client.Do(req)
+	if err = raiseForErr(err); err != nil {
+		return nil, err
+	}
 
+	return res, nil
 }
 
 
 // post method, two parts:
 // params append to the url, data post in body
-func (c *DClient) post(path string, query, json interface {}) (*http.Response, error) {
+func (c *DClient) post(path string, query, jsonParam interface {}) (*http.Response, error) {
 	// query string as params
 	query_string := ParseStruct2QueryString(query)
 
@@ -154,9 +194,9 @@ func (c *DClient) post(path string, query, json interface {}) (*http.Response, e
 
 	// post data as body
 	var post_data io.Reader = nil
-	if json != nil {
-		buf, err := json.Marshal(json)
-		if err != nil {
+	if jsonParam != nil {
+		buf, err := json.Marshal(jsonParam)
+		if err = raiseForErr(err); err != nil {
 			return nil, err
 		}
 		post_data = bytes.NewBuffer(buf)
@@ -165,13 +205,18 @@ func (c *DClient) post(path string, query, json interface {}) (*http.Response, e
 	// create request
 	req, err := http.NewRequest("POST", path, post_data)
 
-	if err != nil {
+	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	return c.client.Do(req)
+	res, err := c.client.Do(req)
+	if err = raiseForErr(err); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 
@@ -187,81 +232,31 @@ func (c *DClient) delete(path string, options interface{}) (*http.Response, erro
 	}
 
 	req, err := http.NewRequest("DELETE", path, nil)
-
-	if err != nil {
+	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
 
-	return c.client.Do(req)
-
-}
-
-
-
-//args: method:get/post, path:request path data:post data(json data)
-//return: body, status, error
-func (c *DClient) do(method, path, contentType string, data interface{}) ([]byte, int, error) {
-	var params io.Reader
-	if data != nil {
-		buf, err := json.Marshal(data)
-		if err != nil {
-			return nil, -1, err
-		}
-		params = bytes.NewBuffer(buf)
-	}
-	path = fmt.Sprintf("/%s/%s", c.version, path)
-	if c.scheme == "http" {
-		path = fmt.Sprintf("%s%s", c.endpointURL.String(), path)
-	}
-	req, err := http.NewRequest(strings.ToUpper(method), path, params)
-	if err != nil {
-		return nil, -1, err
-	}
-	req.Header.Set("Content-Type", contentType)
 	res, err := c.client.Do(req)
-	if err != nil {
-		return nil, -1, err
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	return body, res.StatusCode, err
-}
-
-
-
-
-func (c *DClient) Do(api *ModuleAPI) ([]byte, error) {
-	var result []byte
-	var status int
-	var err error
-
-	if strings.ToLower(api.Method) == "get" {
-		result, status, err = c.do(api.Method, fmt.Sprintf("%s?%s", api.ReqUrl, api.ReqArg), api.ContentType, nil)
-
-	}else if strings.ToLower(api.Method) == "post" {
-		//TODO
-	}
-	retError := GetGeneralStatusError(status, api)
-	if err != nil {
+	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-	if retError == NoError {
 
-		return result, nil
-	}else {
-
-		return nil, errors.New(retError)
-	}
+	return res, nil
 }
 
-func (c *DClient) Ping() error {
-	path := "/_ping"
-	_, status, err := c.do("GET", path, "application/json", nil)
+
+
+// Ping
+func (c *DClient) Ping() (string, error) {
+	resp, err := c.get(c.url("/_ping"), nil)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if status != http.StatusOK {
-		return nil
+
+	byte_arr, err := resultBinary(resp, 0)
+	if err != nil {
+		return "", err
 	}
-	return nil
+
+	return string(byte_arr), nil
 }

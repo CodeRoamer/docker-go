@@ -22,12 +22,12 @@ type ModuleAPI struct {
 
 var ListImagesAPI = ModuleAPI {
 	Module: Images,
-	Version: []string{"1.11","1.12","1.13"},
+	Version: []string{"1.11","1.12"},
 	ReqUrl: "/images/json",
 
 	Method: "GET",
 	ResType: "application/json",
-	ReqType: nil,
+	ReqType: "",
 	StatusMap: map[int]string {
 		200: "no error",
 		500: "server error",

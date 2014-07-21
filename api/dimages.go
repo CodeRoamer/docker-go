@@ -2,8 +2,6 @@ package api
 
 import (
 	"encoding/json"
-
-	"github.com/Unknwon/com"
 )
 
 type ListImagesAPI_Query struct {
@@ -22,18 +20,29 @@ type ListImagesAPI_Resp struct {
 	Tag         string `json:",omitempty"`
 }
 
-func (client *DClient) ListImages(json ListImagesAPI_Query) ([]ListImagesAPI_Resp, error) {
-	if !com.IsSliceContainsStr(ListImagesAPI.Version, client.version) {
-		// version not supported
-		return nil, nil
+func (client *DClient) ListImages(json_param ListImagesAPI_Query) ([]ListImagesAPI_Resp, error) {
+	if err := checkVersion(ListImagesAPI.Version, client.version); err != nil {
+		return nil, err
 	}
-	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json)
 
-
-	var images []ListImagesAPI_Resp
-	err = json.Unmarshal(client.result_binary(resp), &images)
+	// get response
+	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json_param)
 	if err != nil {
 		return nil, err
 	}
+
+	// get byte, check response
+	byte_arr, err := resultBinary(resp, ListImagesAPI.Module)
+	if err != nil {
+		return nil, err
+	}
+
+	// marshal bytes into struct
+	var images []ListImagesAPI_Resp
+	if err = raiseForErr(json.Unmarshal(byte_arr, &images)); err != nil {
+		return nil, err
+	}
+
+	// return images
 	return images, nil
 }

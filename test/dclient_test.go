@@ -1,46 +1,43 @@
-package test
+package api
 
-import (
-	"testing"
-	"github.com/coderoamer/docker-go/api"
-)
+import "testing"
 
-func TestListImages(t *testing.T) {
-	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13", 20)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	images, err := client.ListImages(true)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	if images == nil {
-		t.Error("images not fetch")
-	}
+type People struct {
+	Hello string `json:"hello"`
+	Name  string `json:"name"`
+	Age   string `json:"age"`
 }
 
 func TestPing(t *testing.T) {
-	client, err := api.NewDClient("http://42.96.195.83:4213", "v1.13", 20)
+	client, err := NewDClient("http://42.96.195.83:4213", "1.13", 20)
+
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err.Error())
 	}
-	err = client.Ping()
+
+	str, err := client.Ping()
+
 	if err != nil {
-		t.Error("ping error")
-		return
+		t.Fatal(err.Error())
 	}
-	client, err = api.NewDClient("http://42.96.195.83:4214", "v1.13", 20)
+
+	t.Log(str)
+}
+
+func TestListImages(t *testing.T) {
+	client, err := NewDClient("http://42.96.195.83:4213", "1.12", 20)
+
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err.Error())
 	}
-	err = client.Ping()
+
+	str, err := client.ListImages(ListImagesAPI_Query {
+	All : true,
+})
+
 	if err != nil {
-		return
-	}else {
-		t.Error("error ")
+		t.Fatal(err.Error())
 	}
+
+	t.Log(str)
 }

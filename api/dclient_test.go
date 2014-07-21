@@ -1,57 +1,43 @@
 package api
 
 import "testing"
-import (
-	"fmt"
-)
-
-//func TestDClient_do(t *testing.T) {
-//	client, err := NewDClient("unix://var/run/docker.sock", "v1.13", 20)
-//	if err != nil {
-//		t.Error(err)
-//		return
-//	}
-//	res, status, err := client.do("GET", "/images/json", "application/json", nil)
-//	if err != nil {
-//		t.Error(err)
-//		return
-//	}
-//	if status == 404 {
-//		t.Error("404 request error")
-//		return
-//	}
-//	if res == nil {
-//		t.Error("request empty")
-//	}
-//
-//}
 
 type People struct {
 	Hello string `json:"hello"`
-	Name string `json:"name"`
-	Age string `json:"age"`
+	Name  string `json:"name"`
+	Age   string `json:"age"`
 }
 
-func TestGet(t *testing.T) {
-	client, err := NewDClient("http://127.0.0.1:8000", "api",20)
+func TestPing(t *testing.T) {
+	client, err := NewDClient("http://42.96.195.83:4213", "1.13", 20)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		t.Fatal(err.Error())
 	}
-	_, err = client.get(client.url("/announcement?name=lihe"), People{
-		Hello: "name",
-		Name: "lihe",
-		Age: "18",
+
+	str, err := client.Ping()
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	t.Log(str)
+}
+
+func TestListImages(t *testing.T) {
+	client, err := NewDClient("http://42.96.195.83:4213", "1.12", 20)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	str, err := client.ListImages(ListImagesAPI_Query {
+		All : true,
 	})
 
-	fmt.Println(client.queryString(People{
-		Hello: "name",
-		Name: "lihe",
-		Age: "18",
-	}))
-
 	if err != nil {
-		fmt.Println(err)
+		t.Fatal(err.Error())
 	}
+
+	t.Log(str)
 }
