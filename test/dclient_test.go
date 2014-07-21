@@ -1,6 +1,9 @@
-package api
+package test
 
-import "testing"
+import (
+	"testing"
+	"github.com/coderoamer/docker-go/api"
+)
 
 type People struct {
 	Hello string `json:"hello"`
@@ -9,7 +12,7 @@ type People struct {
 }
 
 func TestPing(t *testing.T) {
-	client, err := NewDClient("http://42.96.195.83:4213", "1.13", 20)
+	client, err := api.NewDClient("http://42.96.195.83:4213", "1.13", 20)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -25,19 +28,35 @@ func TestPing(t *testing.T) {
 }
 
 func TestListImages(t *testing.T) {
-	client, err := NewDClient("http://42.96.195.83:4213", "1.12", 20)
+	client, err := api.NewDClient("http://42.96.195.83:4213", "1.12", 20)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	str, err := client.ListImages(ListImagesAPI_Query {
-	All : true,
-})
+	ret, err := client.ListImages(api.ListImagesAPI_Query {
+		All : true,
+	})
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	t.Log(str)
+	t.Log(ret)
+}
+
+func TestInspectImage(t *testing.T) {
+	client, err := api.NewDClient("http://42.96.195.83:4213", "1.12", 20)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	ret, err := client.InspectImage("ubuntu:12.04")
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	t.Log(ret)
 }

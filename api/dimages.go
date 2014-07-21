@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type ListImagesAPI_Query struct {
@@ -20,29 +21,84 @@ type ListImagesAPI_Resp struct {
 	Tag         string `json:",omitempty"`
 }
 
-func (client *DClient) ListImages(json_param ListImagesAPI_Query) ([]ListImagesAPI_Resp, error) {
-	if err := checkVersion(ListImagesAPI.Version, client.version); err != nil {
-		return nil, err
+
+type InspectImageAPI_Resp struct {
+	Created    string
+	Container  string
+	ContainerConfig struct {
+		Hostname     string
+		User         string
+		Memory       int
+		MemorySwap   int
+		AttachStdin  bool
+		AttachStdout bool
+		AttachStderr bool
+		PortSpecs    string
+		Tty          bool
+		OpenStdin    bool
+		StdinOnce    bool
+		Env          []string
+		Cmd          []string
+		Dns          []string
+		Image        string
+		Volumes      []string
+		VolumesFrom  string
+		WorkingDir   string
+	}
+	Id         string
+	Parent     string
+	Size       int
+}
+
+func (client *DClient) ListImages(json_param ListImagesAPI_Query) (images []ListImagesAPI_Resp, err error) {
+	if err = checkVersion(ListImagesAPI.Version, client.version); err != nil {
+		return
 	}
 
 	// get response
 	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json_param)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	// get byte, check response
 	byte_arr, err := resultBinary(resp, ListImagesAPI.Module)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	// marshal bytes into struct
-	var images []ListImagesAPI_Resp
 	if err = raiseForErr(json.Unmarshal(byte_arr, &images)); err != nil {
-		return nil, err
+		return
 	}
 
 	// return images
-	return images, nil
+	return
+}
+
+
+func (client *DClient) InspectImage(name string) (image InspectImageAPI_Resp, err error) {
+	if err = checkVersion(InspectImageAPI.Version, client.version); err != nil {
+		return
+	}
+
+	// get response
+	resp, err := client.get(client.url(fmt.Sprintf(InspectImageAPI.ReqUrl, name)), nil)
+	if err != nil {
+		return
+	}
+
+	// get byte, check response
+	byte_arr, err := resultBinary(resp, InspectImageAPI.Module)
+	if err != nil {
+		return
+	}
+
+	// marshal bytes into struct
+	if err = raiseForErr(json.Unmarshal(byte_arr, &image)); err != nil {
+		return
+	}
+
+	// return images
+	return
 }

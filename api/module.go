@@ -25,3 +25,12 @@ var ListImagesAPI = ModuleAPI {
 	ReqType: "",
 }
 
+
+var InspectImageAPI = ModuleAPI {
+	Module: Images,
+	Version: []string{"1.11","1.12"},
+	ReqUrl: "/images/%s/json",
+
+	ResType: "application/json",
+	ReqType: "",
+}
