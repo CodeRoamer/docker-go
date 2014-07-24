@@ -44,16 +44,6 @@ type DClient struct {
 	timeout               int
 }
 
-type Request struct {
-	version        []string
-	url            string
-	query          interface{}
-	reqType        string
-	method         string
-	module         int
-
-}
-
 // create a new DClient with the given endpoint and version,
 // with additional timeout param
 func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
