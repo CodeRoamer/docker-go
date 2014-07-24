@@ -31,13 +31,15 @@ func TestListImages(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	str, err := client.ListImages(ListImagesAPI_Query {
+	var images []ListImagesAPI_Resp
+	client.ListImages(ListImagesAPI_Query {
 		All : true,
-	})
+	}, &images)
 
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Error(err)
+		return
 	}
 
-	t.Log(str)
+	t.Log(images)
 }

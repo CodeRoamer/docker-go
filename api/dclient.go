@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/Unknwon/com"
+	"errors"
 )
 
 const (
@@ -43,6 +44,15 @@ type DClient struct {
 	timeout               int
 }
 
+type Request struct {
+	version        []string
+	url            string
+	query          interface{}
+	reqType        string
+	method         string
+	module         int
+
+}
 
 // create a new DClient with the given endpoint and version,
 // with additional timeout param
@@ -105,18 +115,17 @@ func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 	if len(query_string) != 0 {
 		path += "?"+query_string
 	}
+	//	req, err := http.NewRequest("GET", path, nil)
+	//	if err = raiseForErr(err); err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	res, err := c.client.Do(req)
+	//	if err = raiseForErr(err); err != nil {
+	//		return nil, err
+	//	}
 
-	req, err := http.NewRequest("GET", path, nil)
-	if err = raiseForErr(err); err != nil {
-		return nil, err
-	}
-
-	res, err := c.client.Do(req)
-	if err = raiseForErr(err); err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return c.client.Get(path)
 }
 
 
@@ -129,7 +138,6 @@ func (c *DClient) post(path string, query, jsonParam interface {}) (*http.Respon
 	if len(query_string) != 0 {
 		path += "?"+query_string
 	}
-
 	// post data as body
 	var post_data io.Reader = nil
 	if jsonParam != nil {
@@ -183,6 +191,27 @@ func (c *DClient) delete(path string, options interface{}) (*http.Response, erro
 }
 
 
+func (client *DClient) Do(module ModuleAPI, param interface{}) (str_result []byte, err error) {
+	if err = checkVersion(module.Version, client.version); err != nil {
+		return
+	}
+	var resp *http.Response
+	switch string(bytes.ToLower([]byte(module.Method))) {
+	case "get":
+		resp, err = client.get(client.url(module.ReqUrl), param)
+		if err != nil {
+			return
+		}
+	case "post":
+
+	case "delete":
+
+	default:
+		err = errors.New("Unkown request method.")
+	}
+
+	return resultBinary(resp, module.Module)
+}
 
 // Ping
 func (c *DClient) Ping() (string, error) {
@@ -225,7 +254,6 @@ func resultBinary(response *http.Response, module int) ([]byte, error) {
 	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-
 
 	return body, nil
 }

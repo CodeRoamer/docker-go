@@ -50,29 +50,34 @@ type InspectImageAPI_Resp struct {
 	Size       int
 }
 
-func (client *DClient) ListImages(json_param ListImagesAPI_Query) (images []ListImagesAPI_Resp, err error) {
-	if err = checkVersion(ListImagesAPI.Version, client.version); err != nil {
-		return
-	}
+func (client *DClient) ListImages(param ListImagesAPI_Query, images *[]ListImagesAPI_Resp) (err error) {
 
-	// get response
-	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json_param)
+	//	if err = checkVersion(ListImagesAPI.Version, client.version); err != nil {
+	//		return
+	//	}
+	//
+	//	// get response
+	//	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json_param)
+	//	if err != nil {
+	//		return
+	//	}
+	//
+	//	// get byte, check response
+	//	byte_arr, err := resultBinary(resp, ListImagesAPI.Module)
+	//	if err != nil {
+	//		return
+	//	}
+	//
+	//	// marshal bytes into struct
+	//	if err = raiseForErr(json.Unmarshal(byte_arr, &images)); err != nil {
+	//		return
+	//	}
+
+	str_result, err := client.Do(ListImagesAPI, param)
 	if err != nil {
-		return
+		return err
 	}
-
-	// get byte, check response
-	byte_arr, err := resultBinary(resp, ListImagesAPI.Module)
-	if err != nil {
-		return
-	}
-
-	// marshal bytes into struct
-	if err = raiseForErr(json.Unmarshal(byte_arr, &images)); err != nil {
-		return
-	}
-
-	// return images
+	err = raiseForErr(json.Unmarshal(str_result, &images))
 	return
 }
 
