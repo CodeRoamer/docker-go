@@ -1,9 +1,6 @@
 package api
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "encoding/json"
 
 type ListImagesAPI_Query struct {
 	All bool    `json:"all"`
@@ -50,30 +47,9 @@ type InspectImageAPI_Resp struct {
 	Size       int
 }
 
-func (client *DClient) ListImages(param ListImagesAPI_Query, images *[]ListImagesAPI_Resp) (err error) {
+func (client *DClient) ListImages(param ListImagesAPI_Query, images *[]ListImagesAPI_Resp /*return*/) (err error) {
 
-	//	if err = checkVersion(ListImagesAPI.Version, client.version); err != nil {
-	//		return
-	//	}
-	//
-	//	// get response
-	//	resp, err := client.get(client.url(ListImagesAPI.ReqUrl), json_param)
-	//	if err != nil {
-	//		return
-	//	}
-	//
-	//	// get byte, check response
-	//	byte_arr, err := resultBinary(resp, ListImagesAPI.Module)
-	//	if err != nil {
-	//		return
-	//	}
-	//
-	//	// marshal bytes into struct
-	//	if err = raiseForErr(json.Unmarshal(byte_arr, &images)); err != nil {
-	//		return
-	//	}
-
-	str_result, err := client.Do(ListImagesAPI, param)
+	str_result, err := client.Do(ListImagesAPI, param,  "")
 	if err != nil {
 		return err
 	}
@@ -81,29 +57,11 @@ func (client *DClient) ListImages(param ListImagesAPI_Query, images *[]ListImage
 	return
 }
 
-
-func (client *DClient) InspectImage(name string) (image InspectImageAPI_Resp, err error) {
-	if err = checkVersion(InspectImageAPI.Version, client.version); err != nil {
-		return
-	}
-
-	// get response
-	resp, err := client.get(client.url(fmt.Sprintf(InspectImageAPI.ReqUrl, name)), nil)
+func (client *DClient) InspectImage(name string, image *InspectImageAPI_Resp /*return*/) ( err error) {
+	str_result, err := client.Do(InspectImageAPI, nil, name)
 	if err != nil {
-		return
+		return err
 	}
-
-	// get byte, check response
-	byte_arr, err := resultBinary(resp, InspectImageAPI.Module)
-	if err != nil {
-		return
-	}
-
-	// marshal bytes into struct
-	if err = raiseForErr(json.Unmarshal(byte_arr, &image)); err != nil {
-		return
-	}
-
-	// return images
+	err = raiseForErr(json.Unmarshal(str_result, image))
 	return
 }

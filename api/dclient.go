@@ -63,7 +63,7 @@ func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
 	switch endpoint_url.Scheme{
 	case "unix":
 		//		httpTransport := &http.Transport{}
-		//		// TODO: socketPath = "/"+u.Host+u.Path
+		// TODO: socketPath = "/"+u.Host+u.Path
 		//		socketPath := u.Path
 		//		unixDial := func(/*proto string, addr string*/) (net.Conn, error) {
 		//			return net.Dial("unix", socketPath)
@@ -89,7 +89,10 @@ func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
 
 // create a url with the given path
 // form with a endpoint, api version and path
-func (c *DClient) url(path string) string {
+func (c *DClient) url(path string, arg string) string {
+	if arg != "" {
+		path = fmt.Sprintf(path, arg)
+	}
 	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
 }
 
@@ -105,15 +108,6 @@ func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 	if len(query_string) != 0 {
 		path += "?"+query_string
 	}
-	//	req, err := http.NewRequest("GET", path, nil)
-	//	if err = raiseForErr(err); err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	res, err := c.client.Do(req)
-	//	if err = raiseForErr(err); err != nil {
-	//		return nil, err
-	//	}
 
 	return c.client.Get(path)
 }
@@ -139,21 +133,26 @@ func (c *DClient) post(path string, query, jsonParam interface {}) (*http.Respon
 	}
 
 	// create request
-	req, err := http.NewRequest("POST", path, post_data)
+//	req, err := http.NewRequest("POST", path, post_data)
+//
+//	if err = raiseForErr(err); err != nil {
+//		return nil, err
+//	}
+//	if post_data != nil {
+//		req.Header.Set("Content-Type", "application/json")
+//	}
+//
+//	res, err := c.client.Do(req)
+//	if err = raiseForErr(err); err != nil {
+//		return nil, err
+//	}
+//	return res, nil
 
+	resp, err := c.client.Post(path, "application/json", post_data)
 	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-	if post_data != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	res, err := c.client.Do(req)
-	if err = raiseForErr(err); err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return resp, nil
 }
 
 
@@ -181,22 +180,28 @@ func (c *DClient) delete(path string, options interface{}) (*http.Response, erro
 	return res, nil
 }
 
-
-func (client *DClient) Do(module ModuleAPI, param interface{}) (str_result []byte, err error) {
+//urlParam exist because a lot of reason...
+//1. ModuleAPI's object should be a const object, we could not change its url
+//2. Maybe go's bug, fmt.Sprintf() 's args could not paras from the other func(args )..
+//But I checkout the docker's doc, I found url only require one param, so I make this args... silly but useful : )
+func (client *DClient) Do(module ModuleAPI, param interface{}, urlParam string ) (str_result []byte, err error) {
 	if err = checkVersion(module.Version, client.version); err != nil {
 		return
 	}
 	var resp *http.Response
 	switch string(bytes.ToLower([]byte(module.Method))) {
 	case "get":
-		resp, err = client.get(client.url(module.ReqUrl), param)
+		resp, err = client.get(client.url(module.ReqUrl, urlParam), param)
 		if err != nil {
 			return
 		}
 	case "post":
-
+		resp, err = client.post(client.url(module.ReqUrl, urlParam), param, nil)
+		if err != nil {
+			return
+		}
 	case "delete":
-
+		resp, err = client.delete(client.url(module.ReqUrl, urlParam), param)
 	default:
 		err = errors.New("Unkown request method.")
 	}
@@ -206,7 +211,7 @@ func (client *DClient) Do(module ModuleAPI, param interface{}) (str_result []byt
 
 // Ping
 func (c *DClient) Ping() (string, error) {
-	resp, err := c.get(c.url("/_ping"), nil)
+	resp, err := c.get(c.url("/_ping", ""), nil)
 	if err != nil {
 		return "", err
 	}
@@ -245,39 +250,5 @@ func resultBinary(response *http.Response, module int) ([]byte, error) {
 	if err = raiseForErr(err); err != nil {
 		return nil, err
 	}
-
 	return body, nil
-}
-
-
-// raise an error for http status
-func raiseForStatus(response *http.Response, module int)  (err error) {
-	err = nil
-
-	if response.StatusCode >= 400 {
-		body, err := ioutil.ReadAll(response.Body)
-
-		var explanation string = ""
-		if err != nil {
-			explanation = string(body)
-		}
-
-		err = APIError {
-			GetGeneralStatusError(response.StatusCode, module),
-			response.StatusCode,
-			explanation,
-		}
-	}
-
-	return err
-}
-
-// raise an error for docker-go error
-// return APIError
-func raiseForErr(err error)  error {
-	if err != nil {
-		err = APIError {"docker-go error", 500, err.Error()}
-	}
-
-	return err
 }

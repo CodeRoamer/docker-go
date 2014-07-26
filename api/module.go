@@ -8,13 +8,13 @@ const (
 )
 
 type ModuleAPI struct {
-	Module        int      //	container | images | misc
-	Version       []string // supported version ["1.11","1.12"]
-	ReqUrl        string   // path for API /images/%s/insert
+	Module			int      //	container | images | misc
+	Version		[]string // supported version ["1.11","1.12"]
+	ReqUrl			string   // path for API /images/%s/insert
 
-	ResType           string // application/json  or  application/vnd.docker.raw-stream  or  application/octet-stream  or  nothing
-	ReqType           string // application/json  or  nothing
-	Method            string //get post delete
+	ResType		string // application/json  or  application/vnd.docker.raw-stream  or  application/octet-stream  or  nothing
+	ReqType		string // application/json  or  nothing
+	Method			string //get post delete
 }
 
 var ListImagesAPI = ModuleAPI {

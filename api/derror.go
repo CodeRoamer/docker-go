@@ -2,6 +2,8 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 
@@ -58,3 +60,36 @@ func (err APIError) IsServerError() bool {
 	return err.StatusCode >= 500 && err.StatusCode < 600
 }
 
+
+// raise an error for docker-go error
+// return APIError
+func raiseForErr(err error)  error {
+	if err != nil {
+		err = APIError {"docker-go error", 500, err.Error()}
+	}
+
+	return err
+}
+
+
+// raise an error for http status
+func raiseForStatus(response *http.Response, module int)  (err error) {
+	err = nil
+
+	if response.StatusCode >= 400 {
+		body, err := ioutil.ReadAll(response.Body)
+
+		var explanation string = ""
+		if err != nil {
+			explanation = string(body)
+		}
+
+		err = APIError {
+			GetGeneralStatusError(response.StatusCode, module),
+			response.StatusCode,
+			explanation,
+		}
+	}
+
+	return err
+}

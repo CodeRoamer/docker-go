@@ -32,8 +32,8 @@ func TestListImages(t *testing.T) {
 	}
 
 	var images []ListImagesAPI_Resp
-	client.ListImages(ListImagesAPI_Query {
-		All : true,
+	err = client.ListImages(ListImagesAPI_Query {
+		All : false,
 	}, &images)
 
 	if err != nil {
@@ -42,4 +42,20 @@ func TestListImages(t *testing.T) {
 	}
 
 	t.Log(images)
+}
+
+func TestInspectImages(t *testing.T) {
+	var image InspectImageAPI_Resp
+	client, err := NewDClient("http://222.26.224.50:4213", "1.13", 20)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	err = client.InspectImage("ubuntu", &image)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Log(image)
 }
