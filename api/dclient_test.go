@@ -46,7 +46,7 @@ func TestListImages(t *testing.T) {
 
 func TestInspectImages(t *testing.T) {
 	var image InspectImageAPI_Resp
-	client, err := NewDClient("http://222.26.224.50:4213", "1.13", 20)
+	client, err := NewDClient("http://42.96.195.83:4213", "1.13", 20)
 
 	if err != nil {
 		t.Fatal(err.Error())
