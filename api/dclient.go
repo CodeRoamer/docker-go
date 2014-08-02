@@ -86,7 +86,6 @@ func NewDClient(endpoint, version string, timeout int) (*DClient, error) {
 	}, nil
 }
 
-
 // create a url with the given path
 // form with a endpoint, api version and path
 func (c *DClient) url(path string, arg string) string {
@@ -95,8 +94,6 @@ func (c *DClient) url(path string, arg string) string {
 	}
 	return fmt.Sprintf("%s/v%s%s", c.endpoint, c.version, path)
 }
-
-
 
 // pay attention: path is complete path, should be like this:
 // http://endpoint/v1.12/containers
@@ -111,7 +108,6 @@ func (c *DClient) get(path string, query interface{}) (*http.Response, error) {
 
 	return c.client.Get(path)
 }
-
 
 // post method, two parts:
 // params append to the url, data post in body
@@ -131,22 +127,6 @@ func (c *DClient) post(path string, query, jsonParam interface {}) (*http.Respon
 		}
 		post_data = bytes.NewBuffer(buf)
 	}
-
-	// create request
-//	req, err := http.NewRequest("POST", path, post_data)
-//
-//	if err = raiseForErr(err); err != nil {
-//		return nil, err
-//	}
-//	if post_data != nil {
-//		req.Header.Set("Content-Type", "application/json")
-//	}
-//
-//	res, err := c.client.Do(req)
-//	if err = raiseForErr(err); err != nil {
-//		return nil, err
-//	}
-//	return res, nil
 
 	resp, err := c.client.Post(path, "application/json", post_data)
 	if err = raiseForErr(err); err != nil {
@@ -180,10 +160,7 @@ func (c *DClient) delete(path string, options interface{}) (*http.Response, erro
 	return res, nil
 }
 
-//urlParam exist because a lot of reason...
-//1. ModuleAPI's object should be a const object, we could not change its url
-//2. Maybe go's bug, fmt.Sprintf() 's args could not paras from the other func(args )..
-//But I checkout the docker's doc, I found url only require one param, so I make this args... silly but useful : )
+//I checkout the docker's doc, I found url only require one param, so I make this args... silly but useful : )
 func (client *DClient) Do(module ModuleAPI, param interface{}, urlParam string ) (str_result []byte, err error) {
 	if err = checkVersion(module.Version, client.version); err != nil {
 		return
@@ -210,18 +187,19 @@ func (client *DClient) Do(module ModuleAPI, param interface{}, urlParam string )
 }
 
 // Ping
-func (c *DClient) Ping() (string, error) {
+func (c *DClient) Ping() (bool, error) {
 	resp, err := c.get(c.url("/_ping", ""), nil)
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
 	byte_arr, err := resultBinary(resp, 0)
-	if err != nil {
-		return "", err
-	}
 
-	return string(byte_arr), nil
+	if strings.Contains(string(byte_arr), "OK") {
+		return true, nil
+	}else {
+		return false, nil
+	}
 }
 
 

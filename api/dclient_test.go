@@ -1,12 +1,10 @@
 package api
 
-import "testing"
-
-type People struct {
-	Hello string `json:"hello"`
-	Name  string `json:"name"`
-	Age   string `json:"age"`
-}
+import (
+	"testing"
+	"io/ioutil"
+	"strings"
+)
 
 var host = "http://42.96.195.83:4213"
 
@@ -17,13 +15,38 @@ func TestPing(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	str, err := client.Ping()
+	ok, err := client.Ping()
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	t.Log(str)
+	if !ok {
+		t.Fatal("ping failed")
+	}
+}
+
+func TestPost(t *testing.T) {
+	client, err := NewDClient(host, "1.13", 20)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	res, err := client.post(host + "/images/create", "fromImage=base", nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if strings.Contains(string(body), "404") {
+		t.Fatal("post test get 404")
+	}else {
+		t.Logf("%s", body)
+	}
+	res.Body.Close()
 }
 
 func TestListImages(t *testing.T) {
@@ -43,21 +66,15 @@ func TestListImages(t *testing.T) {
 		return
 	}
 
-	t.Log(images)
-}
-
-func TestInspectImages(t *testing.T) {
-	var image InspectImageAPI_Resp
-	_, err := NewDClient(host, "1.13", 20)
-
-	if err != nil {
-		t.Fatal(err.Error())
+	if images == nil {
+		t.Error("images list failed")
 	}
-//	err = client.InspectImage("ubuntu", &image)
-//	if err != nil {
-//		t.Error(err)
-//		return
-//	}
-
-	t.Log(image)
 }
+
+func TestUrl(t *testing.T) {
+	client, _ := NewDClient(host, "1.12", 20)
+	if client.url("/path/%s/", "hello") != host + "/v1.12/path/hello/" {
+		t.Fatal("url error")
+	}
+}
+
