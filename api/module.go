@@ -35,7 +35,7 @@ var InspectImageAPI = ModuleAPI {
 
 	ResType: "application/json",
 	ReqType: "",
-	Method:"post",
+	Method:"get",
 }
 
 var InsertFileAPI = ModuleAPI {
@@ -45,4 +45,5 @@ var InsertFileAPI = ModuleAPI {
 
 	ResType: "application/json",
 	ReqType: "",
+	Method:"post",
 }

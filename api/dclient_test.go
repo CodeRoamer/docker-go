@@ -51,7 +51,6 @@ func TestPost(t *testing.T) {
 
 func TestListImages(t *testing.T) {
 	client, err := NewDClient(host, "1.12", 20)
-
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -78,3 +77,22 @@ func TestUrl(t *testing.T) {
 	}
 }
 
+func TestInspectImage(t *testing.T) {
+	client, err := NewDClient(host, "1.12", 20)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	var image InspectImageAPI_Resp
+	if err = client.InspectImage("ubuntu:12.04", &image); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if image.Container != "0fb632e490f482642b6706e416136fdb9ea1b103a9d6b1e0cfa06ca2ef8d56ff" {
+		t.Fatal("inspect image error")
+	}
+
+	if client.InspectImage("ubuntu", &image) == nil {
+		t.Fatal("inspect image check error failed")
+	}
+}

@@ -74,17 +74,14 @@ func raiseForErr(err error)  error {
 
 // raise an error for http status
 func raiseForStatus(response *http.Response, module int)  (err error) {
-	err = nil
-
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= 300 {
 		body, err := ioutil.ReadAll(response.Body)
-
 		var explanation string = ""
 		if err != nil {
 			explanation = string(body)
 		}
 
-		err = APIError {
+		return APIError {
 			GetGeneralStatusError(response.StatusCode, module),
 			response.StatusCode,
 			explanation,

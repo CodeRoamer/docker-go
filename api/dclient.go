@@ -159,28 +159,33 @@ func (c *DClient) delete(path string, options interface{}) (*http.Response, erro
 
 	return res, nil
 }
-
+//param for ?param
+//urlParam for /path/%s/..../
 //I checkout the docker's doc, I found url only require one param, so I make this args... silly but useful : )
 func (client *DClient) Do(module ModuleAPI, param interface{}, urlParam string ) (str_result []byte, err error) {
 	if err = checkVersion(module.Version, client.version); err != nil {
-		return
+		return nil, err
 	}
 	var resp *http.Response
 	switch string(bytes.ToLower([]byte(module.Method))) {
 	case "get":
 		resp, err = client.get(client.url(module.ReqUrl, urlParam), param)
 		if err != nil {
-			return
+			return nil, err
 		}
 	case "post":
 		resp, err = client.post(client.url(module.ReqUrl, urlParam), param, nil)
 		if err != nil {
-			return
+			return nil, err
 		}
 	case "delete":
 		resp, err = client.delete(client.url(module.ReqUrl, urlParam), param)
+		if err != nil {
+			return nil, err
+		}
 	default:
-		err = errors.New("Unkown request method.")
+		return nil, errors.New("Unkown request method.")
+
 	}
 
 	return resultBinary(resp, module.Module)
